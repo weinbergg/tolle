@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    @apply bg-void text-warm;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-bronze/30 text-warm;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-bronze/60 ring-offset-2 ring-offset-void;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-16;
+  }
+
+  .section-padding {
+    @apply py-24 md:py-32 lg:py-40;
+  }
+
+  .heading-display {
+    @apply font-serif text-4xl font-light leading-tight tracking-tight md:text-5xl lg:text-6xl xl:text-7xl;
+  }
+
+  .heading-section {
+    @apply font-serif text-3xl font-light leading-tight tracking-tight md:text-4xl lg:text-5xl;
+  }
+
+  .text-body {
+    @apply text-base leading-relaxed text-warm/70 md:text-lg;
+  }
+
+  .text-label {
+    @apply text-xs uppercase tracking-[0.2em] text-bronze-light/60;
+  }
+
+  .glass-card {
+    @apply relative overflow-hidden rounded-sm border border-bronze/20 bg-graphite/40 backdrop-blur-sm;
+  }
+
+  .glass-card::before {
+    content: "";
+    @apply pointer-events-none absolute inset-0 bg-gradient-to-br from-bronze/5 via-transparent to-transparent;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm border border-bronze/40 bg-bronze/10 px-8 py-4 text-sm uppercase tracking-[0.15em] text-bronze-light transition-all duration-500 hover:border-bronze/70 hover:bg-bronze/20 hover:text-warm;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm border border-warm/10 bg-transparent px-8 py-4 text-sm uppercase tracking-[0.15em] text-warm/70 transition-all duration-500 hover:border-warm/30 hover:text-warm;
+  }
+
+  .gradient-radial-bronze {
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 50%,
+      rgba(176, 141, 87, 0.08) 0%,
+      rgba(5, 5, 5, 0) 70%
+    );
+  }
+
+  .gradient-radial-smoke {
+    background: radial-gradient(
+      ellipse 100% 80% at 50% 100%,
+      rgba(26, 21, 18, 0.6) 0%,
+      rgba(5, 5, 5, 0) 60%
+    );
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
