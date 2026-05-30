@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#B08D57" stroke-width="2" stroke-linecap="round">
+  <circle cx="100" cy="100" r="92"/>
+  <circle cx="100" cy="100" r="80"/>
+  <g id="tile"><path d="M100,8 L106,20 L94,20 Z"/></g>
+  <!-- tile is repeated around the rim by the live renderer -->
+</svg>

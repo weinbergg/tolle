@@ -106,3 +106,31 @@
     text-wrap: balance;
   }
 }
+
+/* Slow specular shimmer travelling across the configurator preview metal */
+@keyframes mirror-shimmer {
+  0% {
+    transform: translate(-26px, -10px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(30px, 14px);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-26px, -10px);
+    opacity: 0.7;
+  }
+}
+
+.mirror-shimmer {
+  animation: mirror-shimmer 9s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-shimmer {
+    animation: none;
+  }
+}

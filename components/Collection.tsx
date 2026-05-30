@@ -1,10 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { products } from "@/data/products";
-import ProductCard from "./ProductCard";
+import { products as staticProducts, type Product } from "@/data/products";
+import ProductCard, { type DisplayProduct } from "./ProductCard";
 
-export default function Collection() {
+interface CollectionProps {
+  products?: (Product & { image?: string })[];
+}
+
+export default function Collection({ products }: CollectionProps) {
+  const list: DisplayProduct[] = products?.length ? products : staticProducts;
   return (
     <section
       id="collection"
@@ -32,7 +37,7 @@ export default function Collection() {
         </motion.div>
 
         <div className="grid gap-8 sm:grid-cols-2">
-          {products.map((product, i) => (
+          {list.map((product, i) => (
             <ProductCard key={product.id} product={product} index={i} />
           ))}
         </div>

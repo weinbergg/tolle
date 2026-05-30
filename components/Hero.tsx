@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import ToliMirrorScene from "./ToliMirrorScene";
 import { scrollToSection } from "@/lib/utils";
 
@@ -42,7 +43,6 @@ export default function Hero() {
             {[
               { label: "Коллекция", id: "collection" },
               { label: "О бренде", id: "about" },
-              { label: "Заказ", id: "custom-order" },
               { label: "Контакты", id: "contact" },
             ].map((item) => (
               <button
@@ -53,6 +53,12 @@ export default function Hero() {
                 {item.label}
               </button>
             ))}
+            <Link
+              href="/constructor"
+              className="text-label text-bronze-light/80 transition-colors duration-300 hover:text-bronze-light"
+            >
+              Конструктор
+            </Link>
           </motion.nav>
         </header>
 
@@ -71,26 +77,26 @@ export default function Hero() {
               Авторские символические артефакты ручной работы — на границе
               украшения, объекта созерцания и коллекционного предмета.
             </p>
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/constructor"
+                className="btn-primary"
+                aria-label="Открыть конструктор зеркала"
+              >
+                Создать своё зеркало
+              </Link>
               <button
                 onClick={() => scrollToSection("collection")}
-                className="btn-primary"
+                className="btn-secondary"
                 aria-label="Перейти к коллекции зеркал"
               >
                 Смотреть коллекцию
-              </button>
-              <button
-                onClick={() => scrollToSection("custom-order")}
-                className="btn-secondary"
-                aria-label="Перейти к форме индивидуального заказа"
-              >
-                Обсудить индивидуальный заказ
               </button>
             </div>
           </motion.div>
 
           <motion.div
-            className="order-1 h-[320px] w-full max-w-md lg:order-2 lg:h-[480px] lg:max-w-lg lg:flex-1"
+            className="order-1 h-[340px] w-full max-w-md lg:order-2 lg:h-[500px] lg:max-w-lg lg:flex-1"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}

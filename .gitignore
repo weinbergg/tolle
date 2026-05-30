@@ -36,3 +36,6 @@ pnpm-debug.log*
 
 # typescript
 *.tsbuildinfo
+
+# admin runtime data store (file-based persistence)
+/.data/

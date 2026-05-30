@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { products } from "@/data/products";
+import { products as staticProducts, type Product } from "@/data/products";
 import { cn } from "@/lib/utils";
 
 interface FormData {
@@ -19,11 +19,16 @@ interface FormErrors {
 
 type FormStatus = "idle" | "loading" | "success" | "error";
 
-export default function ContactForm() {
+interface ContactFormProps {
+  products?: Product[];
+}
+
+export default function ContactForm({ products }: ContactFormProps) {
+  const list = products?.length ? products : staticProducts;
   const [formData, setFormData] = useState<FormData>({
     name: "",
     contact: "",
-    product: products[0].id,
+    product: list[0].id,
     comment: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -64,7 +69,7 @@ export default function ContactForm() {
       setFormData({
         name: "",
         contact: "",
-        product: products[0].id,
+        product: list[0].id,
         comment: "",
       });
     } catch {
@@ -179,7 +184,7 @@ export default function ContactForm() {
                   onChange={(e) => handleChange("product", e.target.value)}
                   className="w-full rounded-sm border border-warm/10 bg-void/50 px-4 py-3 text-warm transition-colors duration-300 focus:border-bronze/40 focus:outline-none"
                 >
-                  {products.map((p) => (
+                  {list.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>

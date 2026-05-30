@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { customOrderOptions } from "@/data/products";
 import { cn, scrollToSection } from "@/lib/utils";
 
@@ -73,6 +74,13 @@ export default function CustomOrder() {
             диалоге. Каждое индивидуальное изделие создаётся в мастерской с
             нуля.
           </p>
+          <Link
+            href="/constructor"
+            className="btn-primary mt-8"
+            aria-label="Открыть интерактивный конструктор зеркала"
+          >
+            Собрать индивидуальный Толе
+          </Link>
         </motion.div>
 
         <div className="grid gap-12 lg:grid-cols-2">

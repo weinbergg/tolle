@@ -28,31 +28,35 @@ function StaticMirrorFallback() {
   return (
     <div
       className="relative flex h-full w-full items-center justify-center"
-      aria-label="Декоративное изображение зеркала Толе"
+      aria-label="Изображение бронзового зеркала Толе с отражением леса"
       role="img"
     >
       <div className="relative">
-        <div className="absolute -inset-8 rounded-full bg-bronze/5 blur-3xl" />
-        <div className="relative h-56 w-56 rounded-full border-2 border-bronze/40 bg-gradient-to-br from-bronze-dark via-graphite to-void shadow-2xl md:h-72 md:w-72 lg:h-80 lg:w-80">
-          <div className="absolute inset-3 rounded-full bg-gradient-to-br from-void via-graphite/90 to-bronze-dark/60">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-bronze/10 to-bronze-light/5" />
-            <div className="absolute left-1/4 top-1/4 h-1/3 w-1/3 rounded-full bg-bronze-light/5 blur-xl" />
-          </div>
-          <div className="absolute -inset-1 rounded-full border border-bronze/20" />
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-1 w-1 rounded-full bg-bronze/30"
-              style={{
-                top: "50%",
-                left: "50%",
-                transform: `rotate(${i * 30}deg) translateY(-${112}px)`,
-              }}
-            />
-          ))}
-        </div>
-        <div className="absolute left-1/2 top-0 h-4 w-4 -translate-x-1/2 -translate-y-2 rounded-full border border-bronze/50 bg-bronze-dark">
-          <div className="absolute left-1/2 top-full h-3 w-px -translate-x-1/2 bg-bronze/40" />
+        {/* soft bronze halo so the object never gets lost on the dark page */}
+        <div className="absolute -inset-12 rounded-full bg-bronze/10 blur-[80px]" />
+        {/* bail */}
+        <div className="absolute left-1/2 top-0 z-10 h-5 w-5 -translate-x-1/2 -translate-y-3 rounded-full border-2 border-bronze-light/70 bg-transparent" />
+        {/* convex round cabochon */}
+        <div
+          className="relative h-64 w-64 overflow-hidden rounded-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] ring-1 ring-bronze-light/50 md:h-80 md:w-80 lg:h-[22rem] lg:w-[22rem]"
+          style={{
+            background:
+              "radial-gradient(120% 90% at 38% 28%, #f3e6cf 0%, #d8b988 16%, #B08D57 42%, #6e5733 72%, #2c2317 100%), linear-gradient(160deg, #4a5a39 0%, transparent 45%)",
+            backgroundBlendMode: "screen, normal",
+          }}
+        >
+          {/* reflected forest / sunset hint on the convex surface */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(80% 50% at 60% 75%, rgba(74,90,57,0.55) 0%, rgba(40,52,33,0.25) 35%, transparent 60%)",
+            }}
+          />
+          {/* bright specular highlight */}
+          <div className="absolute left-[22%] top-[18%] h-16 w-10 rounded-[50%] bg-warm/60 blur-md" />
+          {/* warm horizon glow */}
+          <div className="absolute bottom-[20%] left-1/2 h-10 w-32 -translate-x-1/2 rounded-[50%] bg-[#f0d2a0]/30 blur-lg" />
         </div>
       </div>
     </div>
@@ -125,6 +129,15 @@ export default function ToliMirrorScene() {
       transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="absolute inset-0 gradient-radial-bronze" aria-hidden="true" />
+      {/* layered bronze halo so the polished object reads against the dark page */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-4/5 w-4/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-bronze/15 blur-[100px]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-1/2 w-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-bronze-light/10 blur-[60px]"
+        aria-hidden="true"
+      />
       {!mounted ? (
         <SceneFallback />
       ) : useStatic || reducedMotion ? (

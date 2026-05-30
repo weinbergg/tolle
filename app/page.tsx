@@ -8,7 +8,8 @@ import OrderSteps from "@/components/OrderSteps";
 import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
-import { products } from "@/data/products";
+import Analytics from "@/components/Analytics";
+import { getVisibleProducts } from "@/lib/server/store";
 import { CONTACT } from "@/lib/utils";
 
 const organizationJsonLd = {
@@ -22,29 +23,31 @@ const organizationJsonLd = {
   sameAs: [CONTACT.telegram],
 };
 
-const productsJsonLd = products
-  .filter((p) => !p.isCustom)
-  .map((product) => ({
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description,
-    material: product.material,
-    brand: {
-      "@type": "Brand",
-      name: "Толе",
-    },
-    ...(product.price !== null && {
-      offers: {
-        "@type": "Offer",
-        price: product.price,
-        priceCurrency: "RUB",
-        availability: "https://schema.org/PreOrder",
-      },
-    }),
-  }));
+export default async function Home() {
+  const products = await getVisibleProducts();
 
-export default function Home() {
+  const productsJsonLd = products
+    .filter((p) => !p.isCustom)
+    .map((product) => ({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description: product.description,
+      material: product.material,
+      brand: {
+        "@type": "Brand",
+        name: "Толе",
+      },
+      ...(product.price !== null && {
+        offers: {
+          "@type": "Offer",
+          price: product.price,
+          priceCurrency: "RUB",
+          availability: "https://schema.org/PreOrder",
+        },
+      }),
+    }));
+
   return (
     <>
       <script
@@ -61,16 +64,18 @@ export default function Home() {
         />
       ))}
 
+      <Analytics event="pageview" />
+
       <main>
         <Hero />
         <AboutToli />
-        <Collection />
+        <Collection products={products} />
         <CustomOrder />
         <Workshop />
         <Packaging />
         <OrderSteps />
         <FAQ />
-        <ContactForm />
+        <ContactForm products={products} />
       </main>
       <Footer />
     </>

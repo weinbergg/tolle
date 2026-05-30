@@ -4,9 +4,12 @@ import { motion } from "framer-motion";
 import type { Product } from "@/data/products";
 import { formatPrice, scrollToSection } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { trackProduct } from "./Analytics";
+
+export type DisplayProduct = Product & { image?: string };
 
 interface ProductCardProps {
-  product: Product;
+  product: DisplayProduct;
   index: number;
 }
 
@@ -52,6 +55,7 @@ function ProductVisual({ accent }: { accent: Product["accent"] }) {
 
 export default function ProductCard({ product, index }: ProductCardProps) {
   const handleOrder = () => {
+    trackProduct(product.id);
     scrollToSection("contact");
     setTimeout(() => {
       const select = document.getElementById("product-select") as HTMLSelectElement;
@@ -70,7 +74,18 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       transition={{ duration: 0.7, delay: index * 0.1 }}
       className="glass-card group flex flex-col overflow-hidden transition-all duration-500 hover:border-bronze/40"
     >
-      <ProductVisual accent={product.accent} />
+      {product.image ? (
+        <div className="relative aspect-[4/3] overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        </div>
+      ) : (
+        <ProductVisual accent={product.accent} />
+      )}
       <div className="flex flex-1 flex-col p-8">
         <h3 className="mb-3 font-serif text-2xl text-warm">{product.name}</h3>
         <dl className="mb-4 space-y-1 text-sm text-warm/50">
