@@ -201,8 +201,8 @@ export default function CatalogTab() {
         {dirty && <span className="text-xs text-bronze/70">Есть несохранённые изменения</span>}
         {!dirty && savedAt && <span className="text-xs text-warm/40">Сохранено в {savedAt}</span>}
         <p className="text-xs text-warm/35">
-          Рисунки символов хранятся в коде; здесь редактируются названия, темы, цены,
-          порядок и видимость.
+          Здесь редактируются названия, темы, цены, порядок и видимость. Можно
+          создавать свои узоры/символы и загружать к ним изображение (SVG/PNG).
         </p>
       </div>
 
@@ -257,17 +257,17 @@ export default function CatalogTab() {
           <h3 className="text-xs uppercase tracking-wider text-warm/40">
             Элементы — {activeZone.label}
           </h3>
-          {zone !== "petroglyph" && !creating && (
+          {!creating && (
             <button
               onClick={() => setCreating(true)}
               className="rounded-sm border border-bronze/40 px-4 py-2 text-xs text-bronze-light hover:bg-bronze/10"
             >
-              + Создать узор
+              + {zone === "petroglyph" ? "Создать символ" : "Создать узор"}
             </button>
           )}
         </div>
 
-        {creating && zone !== "petroglyph" && (
+        {creating && (
           <div className="mb-4 grid items-center gap-3 rounded-sm border border-bronze/30 bg-bronze/[0.05] p-4 md:grid-cols-[auto_1fr_auto]">
             <div className="flex h-16 w-16 items-center justify-center rounded-sm border border-warm/10 bg-void/40">
               {newImage ? (
@@ -281,7 +281,7 @@ export default function CatalogTab() {
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Название узора"
+                placeholder={zone === "petroglyph" ? "Название символа" : "Название узора"}
                 className="w-full rounded-sm border border-warm/10 bg-void/50 px-3 py-2 text-sm text-warm focus:border-bronze/40 focus:outline-none"
               />
               <label className="inline-block cursor-pointer rounded-sm border border-warm/15 px-3 py-1.5 text-xs text-warm/60 hover:border-bronze/40">
@@ -396,7 +396,7 @@ export default function CatalogTab() {
                   />
                 )}
 
-                {zone !== "petroglyph" && (
+                {(
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     <label className="cursor-pointer rounded-sm border border-warm/15 px-3 py-1 text-[11px] text-warm/55 hover:border-bronze/40">
                       {item.image ? "Заменить изображение" : "Добавить изображение"}

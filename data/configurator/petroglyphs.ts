@@ -18,6 +18,11 @@ export interface Petroglyph {
   available?: boolean;
   /** Display order within its group. */
   order?: number;
+  /**
+   * Optional raster/SVG image (data URL or public path) for admin-uploaded
+   * glyphs. When set it is rendered instead of the vector `shapes`.
+   */
+  image?: string;
 }
 
 const S = 2.2; // default engraving stroke weight (×base)

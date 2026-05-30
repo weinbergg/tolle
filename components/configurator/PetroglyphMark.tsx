@@ -71,6 +71,22 @@ export default function PetroglyphMark({
   const glyph = getPetroglyph(placement.glyphId);
   if (!glyph) return null;
 
+  if (glyph.image) {
+    const s = footprint * 1.05;
+    return (
+      // eslint-disable-next-line jsx-a11y/alt-text
+      <image
+        href={glyph.image}
+        x={point.x - s / 2}
+        y={point.y - s / 2}
+        width={s}
+        height={s}
+        preserveAspectRatio="xMidYMid meet"
+        opacity={0.92}
+      />
+    );
+  }
+
   const k = footprint / 100;
   const transform = `translate(${point.x} ${point.y}) scale(${k}) translate(-50 -50)`;
   const baseWidth = 2.4;

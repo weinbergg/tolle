@@ -76,16 +76,31 @@ export function applyCatalog(catalog: Catalog): void {
       }
     });
 
-  // 3) Petroglyph glyphs.
+  // 3) Petroglyph glyphs. Built-ins are overridden in place; admin-created
+  //    (custom) glyphs are injected with their uploaded image.
   catalog.items
     .filter((it) => it.zone === "petroglyph")
     .forEach((it) => {
       const g = petroglyphs.find((x) => x.id === it.id);
-      if (!g) return;
-      g.name = it.name;
-      g.group = it.theme as PetroglyphGroup;
-      g.available = it.visible;
-      g.order = it.order;
+      if (g) {
+        g.name = it.name;
+        g.group = it.theme as PetroglyphGroup;
+        g.available = it.visible;
+        g.order = it.order;
+        if (it.image) g.image = it.image;
+        return;
+      }
+      if (it.custom && it.image) {
+        petroglyphs.push({
+          id: it.id,
+          name: it.name,
+          group: it.theme as PetroglyphGroup,
+          shapes: [],
+          available: it.visible,
+          order: it.order,
+          image: it.image,
+        });
+      }
     });
 
   // Petroglyph group labels follow their theme records.

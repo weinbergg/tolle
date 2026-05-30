@@ -51,6 +51,16 @@ function fileToDataUrl(file: File, max = 256): Promise<string> {
 function MiniGlyph({ glyphId, color }: { glyphId: string; color: string }) {
   const glyph = petroglyphs.find((p) => p.id === glyphId);
   if (!glyph) return null;
+  if (glyph.image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={glyph.image}
+        alt={glyph.name}
+        className="h-10 w-10 object-contain"
+      />
+    );
+  }
   return (
     <svg viewBox="0 0 100 100" className="h-10 w-10" aria-hidden="true">
       {glyph.shapes.map((s, i) =>
