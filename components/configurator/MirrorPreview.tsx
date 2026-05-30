@@ -1,22 +1,66 @@
 "use client";
 
-import { forwardRef, useMemo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { forwardRef, useEffect, useMemo, useRef } from "react";
+import { AnimatePresence, animate, motion } from "framer-motion";
 import type {
   MirrorConfiguration,
   MirrorFinish,
   Pattern,
   PatternShape,
+  PetroglyphTool,
 } from "@/types/configurator";
 import { getMaterial } from "@/data/configurator/materials";
 import { getTemplate } from "@/data/configurator/templates";
 import { getPattern } from "@/data/configurator/patterns";
-import { getAnchorPoint } from "@/data/configurator/petroglyphPoints";
+import { anchorPoints, getAnchorPoint } from "@/data/configurator/petroglyphPoints";
+import { cn } from "@/lib/utils";
 import PetroglyphMark from "./PetroglyphMark";
 
 const SIZE = 400;
 const CENTER = SIZE / 2;
 const FIELD = 150; // reflective engraving field radius
+
+/** Keep every focus rect at the baseline aspect so the element never jumps. */
+const VB_W = 400;
+const VB_H = 464;
+const RATIO = VB_H / VB_W;
+
+export type PreviewView =
+  | "overview"
+  | "center"
+  | "radial"
+  | "border"
+  | "petroglyph";
+
+interface VB {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Build an aspect-locked focus rect centred on (cx, cy) with width w. */
+function focus(cx: number, cy: number, w: number): VB {
+  const h = w * RATIO;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
+const VIEWS: Record<PreviewView, VB> = {
+  overview: { x: 0, y: -64, w: VB_W, h: VB_H },
+  center: focus(CENTER, CENTER, 170),
+  radial: focus(CENTER, CENTER, 280),
+  border: focus(CENTER, 95, 210),
+  petroglyph: focus(CENTER, CENTER, 380),
+};
+
+const vbStr = (v: VB) => `${v.x} ${v.y} ${v.w} ${v.h}`;
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const lerpVB = (a: VB, b: VB, t: number): VB => ({
+  x: lerp(a.x, b.x, t),
+  y: lerp(a.y, b.y, t),
+  w: lerp(a.w, b.w, t),
+  h: lerp(a.h, b.h, t),
+});
 
 interface FinishStyle {
   highlightOpacity: number;
@@ -319,16 +363,68 @@ export interface MirrorPreviewProps {
   className?: string;
   animateShimmer?: boolean;
   idPrefix?: string;
+  /** Region the camera should zoom to (animated). Defaults to overview. */
+  view?: PreviewView;
+  reducedMotion?: boolean;
+  /** When true, show clickable anchor points for placing petroglyphs. */
+  interactive?: boolean;
+  /** Active placement tool (controls anchor visibility / cursor). */
+  tool?: PetroglyphTool;
+  /** Called with a point id when the user clicks an anchor while interactive. */
+  onPlacePoint?: (pointId: string) => void;
 }
 
 const MirrorPreview = forwardRef<SVGSVGElement, MirrorPreviewProps>(
   function MirrorPreview(
-    { config, className, animateShimmer = true, idPrefix = "mp" },
+    {
+      config,
+      className,
+      animateShimmer = true,
+      idPrefix = "mp",
+      view = "overview",
+      reducedMotion = false,
+      interactive = false,
+      tool = null,
+      onPlacePoint,
+    },
     ref
   ) {
     const material = getMaterial(config.materialId);
     const template = getTemplate(config.templateId);
     const finish = FINISH_STYLES[config.finish];
+
+    const localRef = useRef<SVGSVGElement | null>(null);
+    const currentVB = useRef<VB>(VIEWS.overview);
+
+    const setRefs = (el: SVGSVGElement | null) => {
+      localRef.current = el;
+      if (typeof ref === "function") ref(el);
+      else if (ref) (ref as React.MutableRefObject<SVGSVGElement | null>).current = el;
+    };
+
+    // Animate the viewBox toward the requested focus region (aspect-locked, so
+    // there is no layout shift). The camera "flies" between zones.
+    useEffect(() => {
+      const el = localRef.current;
+      if (!el) return;
+      const target = VIEWS[view];
+      if (reducedMotion) {
+        currentVB.current = target;
+        el.setAttribute("viewBox", vbStr(target));
+        return;
+      }
+      const from = currentVB.current;
+      const controls = animate(0, 1, {
+        duration: 0.75,
+        ease: [0.65, 0, 0.2, 1],
+        onUpdate: (t) => {
+          const vb = lerpVB(from, target, t);
+          currentVB.current = vb;
+          el.setAttribute("viewBox", vbStr(vb));
+        },
+      });
+      return () => controls.stop();
+    }, [view, reducedMotion]);
 
     const center = template.supportsCenter
       ? getPattern(config.centerPatternId)
@@ -355,8 +451,8 @@ const MirrorPreview = forwardRef<SVGSVGElement, MirrorPreviewProps>(
 
     return (
       <svg
-        ref={ref}
-        viewBox={`0 -64 ${SIZE} ${SIZE + 64}`}
+        ref={setRefs}
+        viewBox={vbStr(VIEWS.overview)}
         className={className}
         role="img"
         aria-label="Превью эскиза зеркала Толе"
@@ -531,6 +627,51 @@ const MirrorPreview = forwardRef<SVGSVGElement, MirrorPreviewProps>(
           />
         </g>
 
+        {/* Interactive petroglyph anchors (drawn above everything so they stay
+            tappable). Empty slots are revealed only once a tool is selected, and
+            each marker pairs a dark halo with a light dashed ring so it reads on
+            any metal. */}
+        {interactive &&
+          anchorPoints.map((pt) => {
+            const filled = (config.petroglyphs ?? []).some(
+              (p) => p.pointId === pt.id
+            );
+            const hit = Math.max(pt.size / 2, 20);
+            const ringR = Math.min(pt.size / 2, 15);
+            return (
+              <g
+                key={`anchor-${pt.id}`}
+                onClick={() => onPlacePoint?.(pt.id)}
+                className={cn(tool ? "cursor-pointer" : "cursor-default")}
+                role="button"
+                aria-label={`Точка ${pt.id}${filled ? " (занята)" : ""}`}
+              >
+                <circle cx={pt.x} cy={pt.y} r={hit} fill="transparent" />
+                {!filled && tool && (
+                  <g style={{ pointerEvents: "none" }}>
+                    <circle
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={ringR}
+                      fill="rgba(0,0,0,0.20)"
+                      stroke="rgba(0,0,0,0.55)"
+                      strokeWidth={1.6}
+                    />
+                    <circle
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={ringR}
+                      fill="none"
+                      stroke="#F4E6C6"
+                      strokeWidth={1.5}
+                      strokeDasharray="3 3.5"
+                    />
+                    <circle cx={pt.x} cy={pt.y} r={1.9} fill="#F4E6C6" />
+                  </g>
+                )}
+              </g>
+            );
+          })}
       </svg>
     );
   }

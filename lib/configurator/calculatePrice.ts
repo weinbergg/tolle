@@ -6,6 +6,7 @@ import type {
 import { finishes, getMaterial, sizes } from "@/data/configurator/materials";
 import { getTemplate } from "@/data/configurator/templates";
 import { getPattern } from "@/data/configurator/patterns";
+import { getStone } from "@/data/configurator/stones";
 
 export const PENDANT_PRICES: Record<MirrorConfiguration["pendant"], number> = {
   ring: 0,
@@ -76,6 +77,11 @@ export function calculatePrice(config: MirrorConfiguration): PriceBreakdown {
         amount: count * PETROGLYPH_PRICE,
       });
     }
+  }
+
+  const stone = getStone(config.stoneId);
+  if (stone.id !== "none" && stone.priceModifier > 0) {
+    lines.push({ label: `Камень: ${stone.name}`, amount: stone.priceModifier });
   }
 
   if (PENDANT_PRICES[config.pendant] > 0) {

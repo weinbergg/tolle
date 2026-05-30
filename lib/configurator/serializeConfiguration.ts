@@ -3,6 +3,7 @@ import { finishes, getMaterial, sizes } from "@/data/configurator/materials";
 import { getTemplate } from "@/data/configurator/templates";
 import { getPattern } from "@/data/configurator/patterns";
 import { getPetroglyph } from "@/data/configurator/petroglyphs";
+import { getStone } from "@/data/configurator/stones";
 import { calculatePrice, formatRub } from "./calculatePrice";
 
 export const defaultConfiguration: MirrorConfiguration = {
@@ -13,6 +14,7 @@ export const defaultConfiguration: MirrorConfiguration = {
   centerPatternId: "sun-wheel",
   radialPatternId: undefined,
   borderPatternId: "border-geometric-01",
+  stoneId: "none",
   pendant: "leather-cord",
   engravingText: "",
   packaging: "standard",
@@ -73,6 +75,9 @@ export function buildReadableSummary(config: MirrorConfiguration): string {
     }
   }
 
+  const stone = getStone(config.stoneId);
+  rows.push(`• Камень на обороте: ${stone.id === "none" ? "без камня" : stone.name}`);
+
   rows.push(`• Подвес: ${PENDANT_LABELS[config.pendant]}`);
   if (config.engravingText && config.engravingText.trim()) {
     rows.push(`• Гравировка: «${config.engravingText.trim()}»`);
@@ -94,6 +99,7 @@ const KEYS: Record<string, keyof MirrorConfiguration> = {
   c: "centerPatternId",
   r: "radialPatternId",
   b: "borderPatternId",
+  g: "stoneId",
   p: "pendant",
   e: "engravingText",
   k: "packaging",

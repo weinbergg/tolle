@@ -97,6 +97,29 @@ export interface PetroglyphPlacement {
   scale?: number;
 }
 
+/** A gemstone that can be set into the concave back of the mirror. */
+export interface MirrorStone {
+  id: string;
+  name: string;
+  description: string;
+  /** Main facet colour. */
+  color: string;
+  /** Bright facet / sparkle colour. */
+  highlight: string;
+  /** Deep shadow colour for the lower facets. */
+  shadow: string;
+  priceModifier: number;
+  available?: boolean;
+  order?: number;
+}
+
+/** Active placement tool shared between the panel palette and the live preview. */
+export type PetroglyphTool =
+  | { kind: "glyph"; glyphId: string }
+  | { kind: "image"; dataUrl: string }
+  | { kind: "eraser" }
+  | null;
+
 export interface MirrorConfiguration {
   size: MirrorSize;
   materialId: string;
@@ -107,6 +130,8 @@ export interface MirrorConfiguration {
   borderPatternId?: string;
   /** Placed petroglyphs for the free-scatter composition. */
   petroglyphs?: PetroglyphPlacement[];
+  /** Gemstone set into the back of the mirror ("none" = no stone). */
+  stoneId?: string;
   pendant: MirrorPendant;
   engravingText?: string;
   packaging: MirrorPackaging;

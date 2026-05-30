@@ -1,13 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { MirrorConfiguration } from "@/types/configurator";
+import type { MirrorConfiguration, PetroglyphTool } from "@/types/configurator";
 import { getTemplate } from "@/data/configurator/templates";
 import { getPatternsByCategory } from "@/data/configurator/patterns";
 import MaterialSelector from "./MaterialSelector";
 import TemplateSelector from "./TemplateSelector";
 import PatternSelector from "./PatternSelector";
-import PetroglyphBoard from "./PetroglyphBoard";
+import PetroglyphPalette from "./PetroglyphPalette";
+import StoneSelector from "./StoneSelector";
 import AddonSelector from "./AddonSelector";
 import ConfigurationSummary from "./ConfigurationSummary";
 import ConfiguratorContactForm from "./ConfiguratorContactForm";
@@ -21,6 +22,8 @@ interface ConfiguratorPanelProps {
   ) => void;
   onTemplateChange: (templateId: string) => void;
   getSketchSvg?: () => string | undefined;
+  tool: PetroglyphTool;
+  setTool: (tool: PetroglyphTool) => void;
 }
 
 const STEP_META: Record<string, { title: string; hint: string }> = {
@@ -29,6 +32,7 @@ const STEP_META: Record<string, { title: string; hint: string }> = {
   center: { title: "Центральный символ", hint: "Главный мотив в центре зеркала" },
   radial: { title: "Узор по окружности", hint: "Повторяющийся элемент по кругу" },
   border: { title: "Орнаментальная рамка", hint: "Внешний орнамент по краю поля" },
+  stone: { title: "Камень на обороте", hint: "Вставка в центр обратной стороны зеркала" },
   petroglyphs: { title: "Петроглифы", hint: "Расставьте символы по точкам или загрузите своё" },
   addons: { title: "Дополнения", hint: "Подвес, гравировка и упаковка" },
   summary: { title: "Итог и заявка", hint: "Проверьте эскиз и отправьте мастеру" },
@@ -40,6 +44,8 @@ export default function ConfiguratorPanel({
   onChange,
   onTemplateChange,
   getSketchSvg,
+  tool,
+  setTool,
 }: ConfiguratorPanelProps) {
   const template = getTemplate(config.templateId);
   const meta = STEP_META[stepId];
@@ -93,8 +99,15 @@ export default function ConfiguratorPanel({
         />
       )}
 
+      {stepId === "stone" && <StoneSelector config={config} onChange={onChange} />}
+
       {stepId === "petroglyphs" && (
-        <PetroglyphBoard config={config} onChange={onChange} />
+        <PetroglyphPalette
+          config={config}
+          onChange={onChange}
+          tool={tool}
+          setTool={setTool}
+        />
       )}
 
       {stepId === "addons" && <AddonSelector config={config} onChange={onChange} />}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import type { MirrorConfiguration } from "@/types/configurator";
+import type { MirrorConfiguration, PetroglyphTool } from "@/types/configurator";
 import { getTemplate } from "@/data/configurator/templates";
 import { getPatternsByCategory } from "@/data/configurator/patterns";
 import {
@@ -12,7 +12,8 @@ import {
   paramsToConfig,
 } from "@/lib/configurator/serializeConfiguration";
 import { loadAndApplyCatalog } from "@/lib/configurator/applyCatalog";
-import MirrorPreview from "./MirrorPreview";
+import MirrorStage from "./MirrorStage";
+import type { PreviewView } from "./MirrorPreview";
 import StepNavigation, { type ConfiguratorStep } from "./StepNavigation";
 import ConfiguratorPanel from "./ConfiguratorPanel";
 import PriceEstimate from "./PriceEstimate";
@@ -23,10 +24,14 @@ const STEPS: ConfiguratorStep[] = [
   { id: "center", title: "Центр" },
   { id: "radial", title: "Окружность" },
   { id: "border", title: "Рамка" },
+  { id: "stone", title: "Камень" },
   { id: "petroglyphs", title: "Петроглифы" },
   { id: "addons", title: "Дополнения" },
   { id: "summary", title: "Итог" },
 ];
+
+const OVERVIEW_VIEWBOX = "0 -64 400 464";
+const ZOOMABLE_STEPS = ["center", "radial", "border", "stone", "petroglyphs"];
 
 const STORAGE_KEY = "toli-configurator";
 
@@ -75,6 +80,7 @@ function stepRelevance(config: MirrorConfiguration): boolean[] {
     t.supportsCenter, // center
     t.supportsRadial, // radial
     t.supportsBorder, // border
+    true, // stone (every mirror has a back)
     !!t.supportsPetroglyphs, // petroglyphs
     true, // addons
     true, // summary
@@ -87,7 +93,25 @@ export default function MirrorConfigurator() {
   const [copied, setCopied] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [, setCatalogVersion] = useState(0);
+  const [tool, setTool] = useState<PetroglyphTool>(null);
+  const [zoomedOut, setZoomedOut] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Respect the OS "reduce motion" preference for the flip / zoom flights.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Reset transient view state whenever the step changes.
+  useEffect(() => {
+    setZoomedOut(false);
+    if (STEPS[step].id !== "petroglyphs") setTool(null);
+  }, [step]);
 
   // Apply admin-edited catalogue overrides (names, themes, prices, order,
   // visibility) onto the static motif/glyph library, then re-render.
@@ -144,12 +168,51 @@ export default function MirrorConfigurator() {
     const svg = svgRef.current;
     if (!svg) return undefined;
     const clone = svg.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute("viewBox", OVERVIEW_VIEWBOX);
     clone.setAttribute("width", "600");
     clone.setAttribute("height", "660");
     return new XMLSerializer().serializeToString(clone);
   }, []);
 
   const relevant = stepRelevance(config);
+
+  const stepId = STEPS[step].id;
+  const onStone = stepId === "stone";
+  const side: "front" | "back" = onStone ? "back" : "front";
+  const backFocused = onStone && !zoomedOut;
+  const showAnchors = stepId === "petroglyphs";
+  const zoomableStep = ZOOMABLE_STEPS.includes(stepId);
+
+  let view: PreviewView = "overview";
+  if (!zoomedOut && !onStone) {
+    if (stepId === "center") view = "center";
+    else if (stepId === "radial") view = "radial";
+    else if (stepId === "border") view = "border";
+    else if (stepId === "petroglyphs") view = "petroglyph";
+  }
+
+  const handlePlacePoint = useCallback(
+    (pointId: string) => {
+      if (!tool) return;
+      const placements = config.petroglyphs ?? [];
+      if (tool.kind === "eraser") {
+        onChange(
+          "petroglyphs",
+          placements.filter((p) => p.pointId !== pointId)
+        );
+        return;
+      }
+      const placement =
+        tool.kind === "glyph"
+          ? { pointId, glyphId: tool.glyphId }
+          : { pointId, customImage: tool.dataUrl };
+      onChange("petroglyphs", [
+        ...placements.filter((p) => p.pointId !== pointId),
+        placement,
+      ]);
+    },
+    [tool, config.petroglyphs, onChange]
+  );
 
   const goNext = () => {
     let i = step + 1;
@@ -180,6 +243,7 @@ export default function MirrorConfigurator() {
     if (!svg) return;
     const exportSize = 1200;
     const clone = svg.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute("viewBox", OVERVIEW_VIEWBOX);
     clone.setAttribute("width", String(exportSize));
     clone.setAttribute("height", String(exportSize));
     const xml = new XMLSerializer().serializeToString(clone);
@@ -231,10 +295,26 @@ export default function MirrorConfigurator() {
             className="pointer-events-none absolute left-1/2 top-1/2 h-3/4 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-bronze/10 blur-[90px]"
             aria-hidden="true"
           />
-          <MirrorPreview
+          {zoomableStep && (
+            <button
+              type="button"
+              onClick={() => setZoomedOut((v) => !v)}
+              className="absolute right-1 top-1 z-10 rounded-full border border-warm/15 bg-graphite/80 px-3 py-1.5 text-[11px] text-warm/70 backdrop-blur transition-colors hover:border-bronze/40 hover:text-warm"
+            >
+              {zoomedOut ? "Приблизить" : "Показать целиком"}
+            </button>
+          )}
+          <MirrorStage
             ref={svgRef}
             config={config}
-            className="relative mx-auto w-full max-w-[15rem] drop-shadow-2xl sm:max-w-sm lg:max-w-md"
+            view={view}
+            side={side}
+            backFocused={backFocused}
+            reducedMotion={reducedMotion}
+            interactive={showAnchors}
+            tool={tool}
+            onPlacePoint={handlePlacePoint}
+            className="relative mx-auto w-full max-w-[15rem] sm:max-w-sm lg:max-w-md"
           />
         </div>
 
@@ -272,6 +352,8 @@ export default function MirrorConfigurator() {
               onChange={onChange}
               onTemplateChange={onTemplateChange}
               getSketchSvg={getSketchSvg}
+              tool={tool}
+              setTool={setTool}
             />
           </AnimatePresence>
         </div>
