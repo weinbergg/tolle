@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AdminProduct } from "@/types/admin";
-import { fetchProducts, saveProducts } from "@/lib/admin/client";
+import type { Product } from "@/data/products";
+import { fetchProducts, saveProducts, fileToDataUrl } from "@/lib/admin/client";
+
+const ACCENTS: { id: Product["accent"]; label: string; swatch: string }[] = [
+  { id: "black", label: "Чёрное", swatch: "from-void via-graphite to-bronze-dark" },
+  { id: "silver", label: "Серебро", swatch: "from-graphite via-zinc-700 to-zinc-900" },
+  { id: "bronze", label: "Бронза", swatch: "from-bronze-dark via-graphite to-void" },
+  { id: "custom", label: "Индивид.", swatch: "from-bronze-dark/80 via-graphite to-void" },
+];
 
 export default function ProductsTab() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
@@ -25,6 +33,12 @@ export default function ProductsTab() {
   const update = (id: string, patch: Partial<AdminProduct>) => {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     setDirty(true);
+  };
+
+  const onUpload = async (id: string, file: File | undefined) => {
+    if (!file) return;
+    const dataUrl = await fileToDataUrl(file);
+    update(id, { image: dataUrl });
   };
 
   const move = (index: number, dir: -1 | 1) => {
@@ -93,15 +107,39 @@ export default function ProductsTab() {
               </button>
             </div>
 
-            {/* image preview */}
-            <div>
+            {/* image preview + upload */}
+            <div className="space-y-2">
               {p.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.image} alt={p.name} className="aspect-square w-full rounded-sm border border-warm/10 object-cover" />
               ) : (
-                <div className="flex aspect-square items-center justify-center rounded-sm border border-dashed border-warm/15 text-[10px] text-warm/30">
-                  нет фото
+                <div
+                  className={`flex aspect-square items-center justify-center rounded-full border-2 border-bronze/30 bg-gradient-to-br ${
+                    ACCENTS.find((a) => a.id === p.accent)?.swatch ?? ACCENTS[0].swatch
+                  }`}
+                  title="Иконка-заглушка (показывается без фото)"
+                >
+                  {p.accent === "custom" && (
+                    <span className="font-serif text-xl text-bronze-light/50">?</span>
+                  )}
                 </div>
+              )}
+              <label className="block cursor-pointer rounded-sm border border-warm/15 px-2 py-1.5 text-center text-[11px] text-warm/60 hover:border-bronze/40">
+                {p.image ? "Заменить фото" : "Загрузить фото"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => onUpload(p.id, e.target.files?.[0])}
+                />
+              </label>
+              {p.image && (
+                <button
+                  onClick={() => update(p.id, { image: "" })}
+                  className="block w-full rounded-sm border border-burgundy/30 px-2 py-1 text-[11px] text-burgundy/80 hover:bg-burgundy/10"
+                >
+                  Убрать фото
+                </button>
               )}
             </div>
 
@@ -148,10 +186,35 @@ export default function ProductsTab() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <p className="text-[11px] uppercase tracking-wider text-warm/40">
+                  Иконка-заглушка (без фото)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ACCENTS.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => update(p.id, { accent: a.id })}
+                      className={`flex items-center gap-2 rounded-sm border px-2 py-1 text-[11px] ${
+                        p.accent === a.id
+                          ? "border-bronze bg-bronze/10 text-bronze-light"
+                          : "border-warm/15 text-warm/55 hover:border-warm/30"
+                      }`}
+                    >
+                      <span
+                        className={`h-4 w-4 rounded-full border border-bronze/30 bg-gradient-to-br ${a.swatch}`}
+                      />
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <input
-                value={p.image}
+                value={p.image.startsWith("data:") ? "" : p.image}
                 onChange={(e) => update(p.id, { image: e.target.value })}
-                placeholder="URL изображения (https://… или /…)"
+                placeholder="…или URL изображения (https://… или /…)"
                 className="w-full rounded-sm border border-warm/10 bg-void/50 px-3 py-2 text-sm text-warm focus:border-bronze/40 focus:outline-none"
               />
 

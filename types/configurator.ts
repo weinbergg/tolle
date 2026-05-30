@@ -43,6 +43,11 @@ export interface Pattern {
   /** Vector geometry used by the live SVG renderer. */
   shapes: PatternShape[];
   /**
+   * Optional raster/SVG image (data URL or public path) for admin-uploaded
+   * motifs. When set it is rendered instead of the vector `shapes`.
+   */
+  image?: string;
+  /**
    * For border patterns: number of concentric ring radii (as fraction of the
    * inner field radius) drawn in addition to the repeated tile.
    */

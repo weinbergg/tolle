@@ -106,6 +106,29 @@ function Shapes({
   );
 }
 
+/** Admin-uploaded motif rendered as an image inside the 100×100 motif box. */
+function ImageMotif({
+  href,
+  transform,
+}: {
+  href: string;
+  transform: string;
+}) {
+  return (
+    <g transform={transform}>
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+      <image
+        href={href}
+        x={0}
+        y={0}
+        width={100}
+        height={100}
+        preserveAspectRatio="xMidYMid meet"
+      />
+    </g>
+  );
+}
+
 /** Engraved motif: a soft shadow copy under a lighter incised line. */
 function Engraving({
   shapes,
@@ -144,6 +167,9 @@ function CenterLayer({
   const size = hasRadial ? 96 : 134;
   const s = size / 100;
   const transform = `translate(${CENTER} ${CENTER}) scale(${s}) translate(-50 -50)`;
+  if (pattern.image) {
+    return <ImageMotif href={pattern.image} transform={transform} />;
+  }
   return (
     <Engraving
       shapes={pattern.shapes}
@@ -174,7 +200,9 @@ function RadialLayer({
       {Array.from({ length: count }, (_, i) => {
         const angle = (i * 360) / count;
         const transform = `rotate(${angle} ${CENTER} ${CENTER}) translate(${CENTER} ${CENTER - rr}) scale(${s}) translate(-50 -50)`;
-        return (
+        return pattern.image ? (
+          <ImageMotif key={i} href={pattern.image} transform={transform} />
+        ) : (
           <Engraving
             key={i}
             shapes={pattern.shapes}
@@ -203,6 +231,20 @@ function BorderLayer({
   const tileR = FIELD * 0.97;
   const size = 36;
   const s = size / 100;
+  // An uploaded border design is treated as one full-field ring image.
+  if (pattern.image) {
+    return (
+      // eslint-disable-next-line jsx-a11y/alt-text
+      <image
+        href={pattern.image}
+        x={CENTER - FIELD}
+        y={CENTER - FIELD}
+        width={FIELD * 2}
+        height={FIELD * 2}
+        preserveAspectRatio="xMidYMid meet"
+      />
+    );
+  }
   return (
     <>
       {rings.map((frac, idx) => (

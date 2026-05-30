@@ -1,5 +1,5 @@
-import type { Catalog } from "@/types/catalog";
-import type { CustomZone } from "@/types/configurator";
+import type { Catalog, CatalogItem } from "@/types/catalog";
+import type { CustomZone, Pattern, PatternCategory } from "@/types/configurator";
 import { patterns } from "@/data/configurator/patterns";
 import {
   petroglyphs,
@@ -16,6 +16,26 @@ import { themesByZone, type Theme } from "@/data/configurator/themes";
  * overrides to every consumer (selectors, preview, price, summary) without
  * threading props. Re-render the configurator after calling this.
  */
+/** Builds a renderable Pattern from an admin-created (image-based) catalog item. */
+function customToPattern(it: CatalogItem): Pattern {
+  const category = it.zone as PatternCategory;
+  return {
+    id: it.id,
+    name: it.name,
+    category,
+    theme: it.theme,
+    file: "",
+    description: it.description,
+    priceModifier: it.priceModifier,
+    allowedTemplates: [],
+    available: it.visible,
+    order: it.order,
+    shapes: [],
+    image: it.image,
+    ...(category === "border" ? { rings: [1.0], tileRepeat: 1 } : {}),
+  };
+}
+
 export function applyCatalog(catalog: Catalog): void {
   // 1) Themes — rebuild each zone list in place so getThemes() sees overrides.
   const byZone = new Map<CustomZone, Theme[]>();
@@ -35,18 +55,25 @@ export function applyCatalog(catalog: Catalog): void {
     }
   });
 
-  // 2) Pattern motifs (center / radial / border).
+  // 2) Pattern motifs (center / radial / border). Built-ins are overridden in
+  //    place; admin-created (custom) motifs are injected with their image.
   catalog.items
     .filter((it) => it.zone !== "petroglyph")
     .forEach((it) => {
       const p = patterns.find((x) => x.id === it.id);
-      if (!p) return;
-      p.name = it.name;
-      p.description = it.description;
-      p.theme = it.theme;
-      p.priceModifier = it.priceModifier;
-      p.available = it.visible;
-      p.order = it.order;
+      if (p) {
+        p.name = it.name;
+        p.description = it.description;
+        p.theme = it.theme;
+        p.priceModifier = it.priceModifier;
+        p.available = it.visible;
+        p.order = it.order;
+        if (it.image) p.image = it.image;
+        return;
+      }
+      if (it.custom && it.image) {
+        patterns.push(customToPattern(it));
+      }
     });
 
   // 3) Petroglyph glyphs.

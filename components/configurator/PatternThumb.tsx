@@ -23,7 +23,17 @@ export default function PatternThumb({
       aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {isBorder ? (
+      {pattern.image ? (
+        // eslint-disable-next-line jsx-a11y/alt-text
+        <image
+          href={pattern.image}
+          x={0}
+          y={0}
+          width={100}
+          height={100}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      ) : isBorder ? (
         <>
           <circle cx="50" cy="50" r="38" fill="none" stroke={color} strokeWidth="2" />
           {(pattern.rings ?? [1]).map((frac, i) => (

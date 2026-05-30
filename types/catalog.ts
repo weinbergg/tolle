@@ -23,6 +23,13 @@ export interface CatalogItem {
   priceModifier: number;
   visible: boolean;
   order: number;
+  /**
+   * Admin-uploaded motif image (data URL or public path). Present only on
+   * `custom` items, whose geometry does not exist in code.
+   */
+  image?: string;
+  /** True for items created in the admin (no matching vector geometry in code). */
+  custom?: boolean;
 }
 
 export interface Catalog {

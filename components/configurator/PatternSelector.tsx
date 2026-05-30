@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { Pattern } from "@/types/configurator";
 import PatternThumb from "./PatternThumb";
 import { formatRub } from "@/lib/configurator/calculatePrice";
@@ -44,6 +45,11 @@ export default function PatternSelector({
         ? patterns
         : patterns.filter((p) => p.theme === activeTheme),
     [patterns, activeTheme]
+  );
+
+  const selected = useMemo(
+    () => patterns.find((p) => p.id === selectedId),
+    [patterns, selectedId]
   );
 
   if (disabled) {
@@ -143,6 +149,33 @@ export default function PatternSelector({
           );
         })}
       </div>
+
+      <AnimatePresence initial={false} mode="wait">
+        {selected && selected.description && (
+          <motion.div
+            key={selected.id}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="mt-1 rounded-sm border border-bronze/25 bg-bronze/[0.06] px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="font-serif text-sm text-bronze-light">{selected.name}</p>
+                {selected.priceModifier > 0 && (
+                  <span className="shrink-0 text-[11px] text-bronze/70">
+                    +{formatRub(selected.priceModifier)}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-warm/65">
+                {selected.description}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

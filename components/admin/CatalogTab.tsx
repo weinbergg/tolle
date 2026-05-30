@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Catalog, CatalogItem, CatalogTheme } from "@/types/catalog";
 import type { CustomZone, PatternShape } from "@/types/configurator";
-import { fetchCatalog, saveCatalog } from "@/lib/admin/client";
+import { fetchCatalog, saveCatalog, fileToDataUrl } from "@/lib/admin/client";
 import { getPattern } from "@/data/configurator/patterns";
 import { getPetroglyph } from "@/data/configurator/petroglyphs";
 
@@ -14,10 +14,20 @@ const ZONES: { id: CustomZone; label: string; hasPrice: boolean }[] = [
   { id: "petroglyph", label: "Петроглифы", hasPrice: false },
 ];
 
-function Thumb({ zone, id }: { zone: CustomZone; id: string }) {
+function Thumb({ item }: { item: CatalogItem }) {
+  if (item.image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={item.image}
+        alt={item.name}
+        className="h-9 w-9 shrink-0 object-contain"
+      />
+    );
+  }
   let shapes: PatternShape[] | undefined;
-  if (zone === "petroglyph") shapes = getPetroglyph(id)?.shapes;
-  else shapes = getPattern(id)?.shapes;
+  if (item.zone === "petroglyph") shapes = getPetroglyph(item.id)?.shapes;
+  else shapes = getPattern(item.id)?.shapes;
   if (!shapes) return <div className="h-9 w-9 rounded-sm border border-dashed border-warm/15" />;
   return (
     <svg viewBox="0 0 100 100" className="h-9 w-9 shrink-0" aria-hidden="true">
@@ -47,6 +57,9 @@ export default function CatalogTab() {
   const [dirty, setDirty] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [zone, setZone] = useState<CustomZone>("center");
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newImage, setNewImage] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -115,6 +128,46 @@ export default function CatalogTab() {
         : prev
     );
     setDirty(true);
+  };
+
+  const setItemImage = async (id: string, file: File | undefined) => {
+    if (!file) return;
+    const dataUrl = await fileToDataUrl(file);
+    updateItem(id, { image: dataUrl });
+  };
+
+  const deleteItem = (id: string) => {
+    if (!confirm("Удалить этот узор? Действие применится после сохранения.")) return;
+    setCatalog((prev) =>
+      prev ? { ...prev, items: prev.items.filter((i) => i.id !== id) } : prev
+    );
+    setDirty(true);
+  };
+
+  const createItem = () => {
+    if (!newName.trim() || !newImage) return;
+    const order =
+      zoneItems.reduce((max, it) => Math.max(max, it.order), -1) + 1;
+    const theme = zoneThemes[0]?.id ?? "geometry";
+    const item: CatalogItem = {
+      id: `custom-${zone}-${Date.now().toString(36)}`,
+      zone,
+      name: newName.trim(),
+      description: "",
+      theme,
+      priceModifier: 0,
+      visible: true,
+      order,
+      image: newImage,
+      custom: true,
+    };
+    setCatalog((prev) =>
+      prev ? { ...prev, items: [...prev.items, item] } : prev
+    );
+    setDirty(true);
+    setCreating(false);
+    setNewName("");
+    setNewImage("");
   };
 
   const onSave = async () => {
@@ -200,9 +253,72 @@ export default function CatalogTab() {
 
       {/* Items editor */}
       <section>
-        <h3 className="mb-3 text-xs uppercase tracking-wider text-warm/40">
-          Элементы — {activeZone.label}
-        </h3>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-xs uppercase tracking-wider text-warm/40">
+            Элементы — {activeZone.label}
+          </h3>
+          {zone !== "petroglyph" && !creating && (
+            <button
+              onClick={() => setCreating(true)}
+              className="rounded-sm border border-bronze/40 px-4 py-2 text-xs text-bronze-light hover:bg-bronze/10"
+            >
+              + Создать узор
+            </button>
+          )}
+        </div>
+
+        {creating && zone !== "petroglyph" && (
+          <div className="mb-4 grid items-center gap-3 rounded-sm border border-bronze/30 bg-bronze/[0.05] p-4 md:grid-cols-[auto_1fr_auto]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-sm border border-warm/10 bg-void/40">
+              {newImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={newImage} alt="" className="h-14 w-14 object-contain" />
+              ) : (
+                <span className="text-[10px] text-warm/30">нет файла</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Название узора"
+                className="w-full rounded-sm border border-warm/10 bg-void/50 px-3 py-2 text-sm text-warm focus:border-bronze/40 focus:outline-none"
+              />
+              <label className="inline-block cursor-pointer rounded-sm border border-warm/15 px-3 py-1.5 text-xs text-warm/60 hover:border-bronze/40">
+                {newImage ? "Заменить файл (SVG/PNG)" : "Загрузить файл (SVG/PNG)"}
+                <input
+                  type="file"
+                  accept="image/svg+xml,image/png,image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setNewImage(await fileToDataUrl(f));
+                  }}
+                />
+              </label>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={createItem}
+                disabled={!newName.trim() || !newImage}
+                className="btn-primary px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Добавить
+              </button>
+              <button
+                onClick={() => {
+                  setCreating(false);
+                  setNewName("");
+                  setNewImage("");
+                }}
+                className="rounded-sm border border-warm/15 px-4 py-2 text-xs text-warm/55 hover:border-warm/30"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           {zoneItems.map((item, i) => (
             <div
@@ -229,7 +345,7 @@ export default function CatalogTab() {
               </div>
 
               <div className="flex items-center justify-center rounded-sm border border-warm/10 bg-void/40 p-1">
-                <Thumb zone={item.zone} id={item.id} />
+                <Thumb item={item} />
               </div>
 
               <div className="space-y-2">
@@ -278,6 +394,36 @@ export default function CatalogTab() {
                     placeholder="Описание"
                     className="w-full rounded-sm border border-warm/10 bg-void/50 px-3 py-2 text-xs text-warm/80 focus:border-bronze/40 focus:outline-none"
                   />
+                )}
+
+                {zone !== "petroglyph" && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <label className="cursor-pointer rounded-sm border border-warm/15 px-3 py-1 text-[11px] text-warm/55 hover:border-bronze/40">
+                      {item.image ? "Заменить изображение" : "Добавить изображение"}
+                      <input
+                        type="file"
+                        accept="image/svg+xml,image/png,image/*"
+                        className="hidden"
+                        onChange={(e) => setItemImage(item.id, e.target.files?.[0])}
+                      />
+                    </label>
+                    {item.image && (
+                      <button
+                        onClick={() => updateItem(item.id, { image: undefined })}
+                        className="rounded-sm border border-warm/15 px-3 py-1 text-[11px] text-warm/55 hover:border-warm/30"
+                      >
+                        {item.custom ? "Убрать файл" : "Вернуть рисунок"}
+                      </button>
+                    )}
+                    {item.custom && (
+                      <button
+                        onClick={() => deleteItem(item.id)}
+                        className="ml-auto rounded-sm border border-burgundy/40 px-3 py-1 text-[11px] text-burgundy/80 hover:bg-burgundy/10"
+                      >
+                        Удалить
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

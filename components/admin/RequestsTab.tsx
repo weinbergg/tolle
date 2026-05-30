@@ -8,6 +8,7 @@ import {
   removeRequest,
   svgToDataUrl,
 } from "@/lib/admin/client";
+import { downloadRequestPdf } from "@/lib/admin/pdf";
 
 const STATUS_LABELS: Record<RequestStatus, string> = {
   new: "Новая",
@@ -36,6 +37,7 @@ export default function RequestsTab() {
   const [requests, setRequests] = useState<StoredRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<RequestStatus | "all">("all");
+  const [pdfId, setPdfId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -59,6 +61,17 @@ export default function RequestsTab() {
     if (!confirm("Удалить заявку безвозвратно?")) return;
     setRequests((prev) => prev.filter((r) => r.id !== id));
     await removeRequest(id);
+  };
+
+  const onPdf = async (r: StoredRequest) => {
+    setPdfId(r.id);
+    try {
+      await downloadRequestPdf(r);
+    } catch {
+      alert("Не удалось сформировать PDF.");
+    } finally {
+      setPdfId(null);
+    }
   };
 
   const visible =
@@ -159,8 +172,15 @@ export default function RequestsTab() {
                     </button>
                   ))}
                   <button
+                    onClick={() => onPdf(r)}
+                    disabled={pdfId === r.id}
+                    className="ml-auto rounded-full border border-bronze/40 px-3 py-1 text-xs text-bronze-light hover:bg-bronze/10 disabled:opacity-50"
+                  >
+                    {pdfId === r.id ? "Формирую…" : "Скачать PDF"}
+                  </button>
+                  <button
                     onClick={() => onDelete(r.id)}
-                    className="ml-auto rounded-full border border-burgundy/40 px-3 py-1 text-xs text-burgundy/80 hover:bg-burgundy/10"
+                    className="rounded-full border border-burgundy/40 px-3 py-1 text-xs text-burgundy/80 hover:bg-burgundy/10"
                   >
                     Удалить
                   </button>
